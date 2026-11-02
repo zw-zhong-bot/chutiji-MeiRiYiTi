@@ -44,6 +44,9 @@ application-local.yml
 application-local.properties
 .env
 .env.local
+.env.*.local
+# 前端 .env 只放非敏感构建配置（VITE_API_BASE），需要入库；真正的密钥走 .env.local
+!frontend/.env
 
 # ===== DSH tool state (not project source) =====
 .dsh-knowledge/

@@ -1,0 +1,78 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1f2430;
+  --muted: #6b7280;
+  --border: #e2e5ea;
+  --accent: #2563eb;
+  --accent-weak: #e8efff;
+  --danger: #dc2626;
+  --success: #15803d;
+  --radius: 10px;
+
+  font: 16px/1.5 system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--text);
+  font-weight: 600;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+input[type='text'],
+input[type='password'],
+input[type='number'],
+select {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error-text {
+  color: var(--danger);
+  margin: 8px 0 0;
+}
