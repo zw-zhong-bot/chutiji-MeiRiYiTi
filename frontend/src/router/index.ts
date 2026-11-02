@@ -18,6 +18,7 @@ const router = createRouter({
       meta: { public: true },
     },
     { path: '/practice', name: 'practice', component: () => import('../views/PracticeView.vue') },
+    { path: '/review', name: 'review', component: () => import('../views/ReviewView.vue') },
     { path: '/records', name: 'records', component: () => import('../views/RecordsView.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/practice' },
   ],

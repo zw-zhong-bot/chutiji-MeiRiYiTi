@@ -1,5 +1,15 @@
 import { request } from './client'
-import type { Difficulty, GradeView, LoginResponse, ModuleMeta, QuestionView, RecordPage, UserView } from './types'
+import type {
+  Difficulty,
+  GradeView,
+  LoginResponse,
+  ModuleMeta,
+  QuestionView,
+  RecordPage,
+  ReviewCard,
+  ReviewStartView,
+  UserView,
+} from './types'
 
 export const authApi = {
   register: (body: { username: string; password: string; nickname: string }) =>
@@ -23,6 +33,20 @@ export const questionApi = {
     request<GradeView>('/questions/' + encodeURIComponent(questionId) + '/grade', {
       method: 'POST',
       body: { answer, durationMs },
+    }),
+}
+
+export const reviewApi = {
+  /** 到期卡片：due=true 的那些。 */
+  due: () => request<ReviewCard[]>('/review/due'),
+
+  /** 全部卡片，含未到期，按到期时间升序。 */
+  cards: () => request<ReviewCard[]>('/review/cards'),
+
+  /** 用卡片存的难度配置重新出一道新题；卡不存在或不属于当前用户时后端报 2010。 */
+  start: (cardId: number) =>
+    request<ReviewStartView>('/review/' + encodeURIComponent(String(cardId)) + '/start', {
+      method: 'POST',
     }),
 }
 

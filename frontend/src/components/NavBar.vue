@@ -12,6 +12,7 @@ const auth = useAuthStore()
       <RouterLink to="/practice" class="brand">出题机</RouterLink>
       <nav class="links">
         <RouterLink to="/practice" class="link">练习</RouterLink>
+        <RouterLink to="/review" class="link">复习</RouterLink>
         <RouterLink to="/records" class="link">记录</RouterLink>
       </nav>
       <div class="right">

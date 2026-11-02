@@ -80,3 +80,38 @@ export interface RecordPage {
   total: number
   totalPages: number
 }
+
+/** 复习卡状态：FSRS 四态。 */
+export type ReviewState = 'NEW' | 'LEARNING' | 'REVIEW' | 'RELEARNING'
+
+/**
+ * 复习卡：调度单元是「模块 + 难度配置」，不是原题。
+ * difficulty 是建卡时存下的难度快照，到期时原样用于重新出题。
+ */
+export interface ReviewCard {
+  cardId: number
+  moduleKey: string
+  difficulty: Difficulty
+  knowledgeKey: string
+  stability: number
+  difficultyFsrs: number
+  reps: number
+  lapses: number
+  state: ReviewState
+  dueAt: string
+  lastReviewAt?: string | null
+  due: boolean
+}
+
+/** 开始复习：后端用卡片存的难度配置重新生成一道新题，题型与练习页一致。 */
+export interface ReviewStartView {
+  cardId: number
+  moduleKey: string
+  difficulty: Difficulty
+  questionId: string
+  prompt: string
+  payload: Record<string, unknown>
+  type: QuestionType
+  timeLimitSec: number
+  expiresAt: string
+}

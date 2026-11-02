@@ -1,32 +1,95 @@
 <script setup lang="ts">
-/** 选择题（type=CHOICE）占位：分发机制已完整，具体交互留待后续里程碑。 */
-defineProps<{ payload: Record<string, unknown> }>()
+/**
+ * CHOICE 题型：单选项作答。
+ * 统一契约：对外暴露 submit()，返回选中项的值（如 "A"）；
+ * 不认识 HTTP，也不认识模块 —— 只认 payload.options。
+ */
+import { computed, ref } from 'vue'
 
-const displayType = 'CHOICE'
+const props = defineProps<{ payload: Record<string, unknown> }>()
+const emit = defineEmits<{ 'submit-request': [] }>()
 
-function submit(): string {
-  return ''
+const selected = ref<number | null>(null)
+
+/**
+ * 后端下发的选项形如 ["A. 张三", "B. 李四", ...]。
+ * 取首个字母作为提交值，与后端的 correctOption（"A"/"B"/...）对齐。
+ */
+const options = computed<string[]>(() => {
+  const raw = props.payload.options
+  return Array.isArray(raw) ? raw.map((item) => String(item)) : []
+})
+
+function optionKey(label: string): string {
+  const match = /^\s*([A-Za-z])[.、．)）]/.exec(label)
+  return match ? match[1].toUpperCase() : ''
 }
 
-defineExpose({ submit })
+function pick(index: number): void {
+  selected.value = selected.value === index ? null : index
+}
+
+function submit(): string {
+  if (selected.value === null) return ''
+  return optionKey(options.value[selected.value] ?? '')
+}
+
+function reset(): void {
+  selected.value = null
+}
+
+defineExpose({ submit, reset })
 </script>
 
 <template>
-  <div class="placeholder">
-    <p>该题型开发中（{{ displayType }}）</p>
+  <div class="choice">
+    <p v-if="options.length === 0" class="muted">这道题没有提供选项</p>
+    <ul v-else class="options">
+      <li v-for="(label, index) in options" :key="index">
+        <button
+          type="button"
+          class="option"
+          :class="{ picked: selected === index }"
+          :aria-pressed="selected === index"
+          @click="pick(index)"
+        >
+          {{ label }}
+        </button>
+      </li>
+    </ul>
   </div>
 </template>
 
 <style scoped>
-.placeholder {
-  padding: 24px;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  text-align: center;
-  color: var(--muted);
+.options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.placeholder p {
-  margin: 0;
+.option {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.option:hover {
+  border-color: var(--accent);
+}
+
+.option.picked {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, #fff);
+  font-weight: 600;
 }
 </style>
