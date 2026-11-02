@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <!-- 本地仓库放在工程内，构建过程不写用户目录，也不受 ~/.m2 权限影响 -->
+    <localRepository>${maven.multiModuleProjectDirectory}/.m2repo</localRepository>
+</settings>

@@ -1,0 +1,44 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: chutiji-backend
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/chutiji?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false&rewriteBatchedStatements=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Shanghai
+        # DDL 里布尔列是 TINYINT（设计文档 5.2/5.4 定死），
+        # 这里把 Hibernate 对 boolean 的期望类型对齐，否则 ddl-auto=validate 会报 bit vs tinyint
+        type:
+          preferred_boolean_jdbc_type: TINYINT
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  jackson:
+    default-property-inclusion: non_null
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:chutiji-local-dev-hs256-secret-key-do-not-use-in-prod-2026}
+    expire-days: 7
+
+logging:
+  level:
+    root: INFO
+    com.chutiji: INFO
