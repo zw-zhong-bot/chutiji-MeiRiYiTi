@@ -23,4 +23,8 @@ public record DifficultyAxis(
     public static DifficultyAxis bool(String key, String label, boolean defaultValue) {
         return new DifficultyAxis(key, label, AxisKind.BOOLEAN, null, null, null, defaultValue, null);
     }
+
+    public static DifficultyAxis enumAxis(String key, String label, String defaultValue, List<AxisOption> options) {
+        return new DifficultyAxis(key, label, AxisKind.ENUM, null, null, null, defaultValue, List.copyOf(options));
+    }
 }
