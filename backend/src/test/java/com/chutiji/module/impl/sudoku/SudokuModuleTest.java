@@ -195,6 +195,20 @@ class SudokuModuleTest {
             // 独立求解器（朴素回溯，不复用生产实现）验证恰好一个解
             int solutions = IndependentSolver.countSolutions(flat, 2);
             assertEquals(1, solutions, level + " 第 " + (i + 1) + " 题不是唯一解，解数=" + solutions);
+            if ((i + 1) % 10 == 0 || i + 1 == count) {
+                System.out.printf("[唯一解] %s %3d/%d 通过  已知数=%d  解数=%d%n",
+                        level, i + 1, count, 81 - countEmpty(flat), solutions);
+            }
         }
+    }
+
+    private static int countEmpty(int[] flat) {
+        int empty = 0;
+        for (int value : flat) {
+            if (value == 0) {
+                empty++;
+            }
+        }
+        return empty;
     }
 }

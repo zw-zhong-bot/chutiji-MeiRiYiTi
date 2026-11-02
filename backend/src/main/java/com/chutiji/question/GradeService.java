@@ -10,6 +10,7 @@ import com.chutiji.module.api.GradeRequest;
 import com.chutiji.module.api.GradeResult;
 import com.chutiji.module.api.QuestionModule;
 import com.chutiji.module.registry.ModuleRegistry;
+import com.chutiji.review.ReviewService;
 import com.chutiji.question.QuestionDtos.GradeAnswerRequest;
 import com.chutiji.question.QuestionDtos.GradeView;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,13 +24,16 @@ public class GradeService {
     private final QuestionService questionService;
     private final AnswerRecordRepository answerRecordRepository;
     private final ObjectMapper objectMapper;
+    private final ReviewService reviewService;
 
     public GradeService(ModuleRegistry registry, QuestionService questionService,
-                        AnswerRecordRepository answerRecordRepository, ObjectMapper objectMapper) {
+                        AnswerRecordRepository answerRecordRepository, ObjectMapper objectMapper,
+                        ReviewService reviewService) {
         this.registry = registry;
         this.questionService = questionService;
         this.answerRecordRepository = answerRecordRepository;
         this.objectMapper = objectMapper;
+        this.reviewService = reviewService;
     }
 
     @Transactional
@@ -48,6 +52,10 @@ public class GradeService {
         record.setCorrect(result.correct());
         record.setDurationMs(request.durationMs());
         answerRecordRepository.save(record);
+
+        // 判题完成后回写复习卡（设计文档 10.3 裁定 2.4）：答错建卡/更新，答对且已有卡则更新。
+        reviewService.recordAnswer(userId, entity.getModuleKey(), entity.getDifficulty(),
+                result.correct(), request.durationMs(), java.time.LocalDateTime.now());
 
         return new GradeView(result.correct(), result.correctAnswer(), result.explanation());
     }
