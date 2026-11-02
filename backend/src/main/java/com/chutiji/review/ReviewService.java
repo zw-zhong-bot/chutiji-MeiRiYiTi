@@ -1,10 +1,13 @@
 package com.chutiji.review;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,9 @@ import com.chutiji.question.QuestionDtos.QuestionView;
 import com.chutiji.question.QuestionService;
 import com.chutiji.review.ReviewDtos.ReviewCardView;
 import com.chutiji.review.ReviewDtos.ReviewStartView;
+import com.chutiji.review.ReviewStatsDtos.DayStat;
+import com.chutiji.review.ReviewStatsDtos.ModuleStat;
+import com.chutiji.review.ReviewStatsDtos.ReviewStatsView;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,6 +105,96 @@ public class ReviewService {
         return new ReviewStartView(card.getId(), card.getModuleKey(), difficulty, question.questionId(),
                 question.prompt(), question.payload(), question.type(), question.timeLimitSec(),
                 question.expiresAt());
+    }
+
+    /**
+     * 复习统计（设计文档 4.2 的 GET /api/review/stats）。
+     *
+     * <p>卡片类指标直接从 t_review_card 现算：单用户的卡片是「六模块 × 几档难度」的量级（几十张），
+     * 拉回来在内存里聚合比写一堆聚合 SQL 更好读，也保证 dueCards 与 /api/review/due 用的是同一个判定。
+     * 只有按日统计必须下推到 SQL，因为它按 t_review_log 行数增长。
+     */
+    @Transactional(readOnly = true)
+    public ReviewStatsView stats(Long userId, LocalDateTime now) {
+        List<ReviewCardEntity> cards = cardRepository.findByUserIdOrderByDueAtAsc(userId);
+
+        int dueCards = 0;
+        int newCards = 0;
+        int totalReviews = 0;
+        int totalLapses = 0;
+        double stabilitySum = 0.0;
+        Map<String, int[]> perModule = new TreeMap<>();
+
+        for (ReviewCardEntity card : cards) {
+            int reps = card.getReps() == null ? 0 : card.getReps();
+            int lapses = card.getLapses() == null ? 0 : card.getLapses();
+            if (card.getDueAt() != null && !card.getDueAt().isAfter(now)) {
+                dueCards++;
+            }
+            if (FsrsState.NEW.equals(card.getState())) {
+                newCards++;
+            }
+            totalReviews += reps;
+            totalLapses += lapses;
+            stabilitySum += card.getStability() == null ? 0.0 : card.getStability();
+            int[] slot = perModule.computeIfAbsent(card.getModuleKey(), key -> new int[3]);
+            slot[0]++;
+            slot[1] += reps;
+            slot[2] += lapses;
+        }
+
+        int totalCards = cards.size();
+        double avgStability = totalCards == 0 ? 0.0 : round2(stabilitySum / totalCards);
+
+        List<ModuleStat> byModule = new ArrayList<>(perModule.size());
+        perModule.forEach((moduleKey, slot) ->
+                byModule.add(new ModuleStat(moduleKey, slot[0], slot[1], slot[2])));
+
+        return new ReviewStatsView(totalCards, dueCards, newCards, totalCards - newCards,
+                totalReviews, totalLapses, avgStability, byModule, last7Days(userId, now));
+    }
+
+    /**
+     * 最近 7 个自然日（含今天），按日期升序，没有复习记录的日期补 0。
+     * 日期集合先铺满再回填，保证调用方拿到的永远是 7 条、不缺天。
+     */
+    private List<DayStat> last7Days(Long userId, LocalDateTime now) {
+        LocalDate today = now.toLocalDate();
+        LocalDate firstDay = today.minusDays(6);
+
+        Map<String, int[]> reviewed = new TreeMap<>();
+        for (Object[] row : logRepository.countByDaySince(userId, firstDay.atStartOfDay())) {
+            String day = toIsoDate(row[0]);
+            reviewed.put(day, new int[] {intOf(row[1]), intOf(row[2])});
+        }
+
+        List<DayStat> days = new ArrayList<>(7);
+        for (int i = 0; i < 7; i++) {
+            String day = firstDay.plusDays(i).toString();
+            int[] counts = reviewed.get(day);
+            days.add(counts == null ? new DayStat(day, 0, 0) : new DayStat(day, counts[0], counts[1]));
+        }
+        return days;
+    }
+
+    /** 原生查询里 DATE() 在不同驱动下可能是 java.sql.Date / LocalDate / 字符串，统一成 ISO 日期。 */
+    private String toIsoDate(Object value) {
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate().toString();
+        }
+        if (value instanceof LocalDate localDate) {
+            return localDate.toString();
+        }
+        String text = String.valueOf(value);
+        return text.length() > 10 ? text.substring(0, 10) : text;
+    }
+
+    private int intOf(Object value) {
+        return value == null ? 0 : ((Number) value).intValue();
+    }
+
+    private double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     // ---------------------------------------------------------------- 内部

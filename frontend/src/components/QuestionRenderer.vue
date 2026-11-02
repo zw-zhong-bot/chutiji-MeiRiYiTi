@@ -13,14 +13,26 @@ import FillRenderer from './renderers/FillRenderer.vue'
 defineProps<{ type: QuestionType; payload: Record<string, unknown> }>()
 defineEmits<{ 'submit-request': [] }>()
 
-const renderer = ref<{ submit: () => unknown } | null>(null)
+const renderer = ref<{ submit: () => unknown; getStrokes?: () => unknown } | null>(null)
 
 /** 把当前渲染器的作答结果交出去，由 PracticeView 统一提交。 */
 function collectAnswer(): unknown {
   return renderer.value?.submit() ?? null
 }
 
-defineExpose({ collectAnswer })
+/**
+ * 把当前渲染器的笔迹交出去（目前只有 FIGURE 有笔迹层，见设计文档 7.4）。
+ *
+ * 笔迹属于「按题型抽取作答数据」的一部分，所以和 collectAnswer 一样收口在这个门面里：
+ * 新增带笔迹的题型只要自己实现 getStrokes()，父视图与这里都不用改。
+ * 没有笔迹或没画时返回 null，父视图据此决定请求体里放不放 ink 键。
+ */
+function collectInk(): unknown {
+  const strokes = renderer.value?.getStrokes?.()
+  return Array.isArray(strokes) && strokes.length > 0 ? strokes : null
+}
+
+defineExpose({ collectAnswer, collectInk })
 </script>
 
 <template>

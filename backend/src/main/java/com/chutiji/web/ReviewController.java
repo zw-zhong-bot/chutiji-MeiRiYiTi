@@ -13,6 +13,7 @@ import com.chutiji.common.ApiResult;
 import com.chutiji.review.ReviewDtos.ReviewCardView;
 import com.chutiji.review.ReviewDtos.ReviewStartView;
 import com.chutiji.review.ReviewService;
+import com.chutiji.review.ReviewStatsDtos.ReviewStatsView;
 import com.chutiji.security.CurrentUser;
 
 /** 复习队列。路径 /api/review/** 已被 AuthInterceptor 的 /api/** 覆盖。 */
@@ -34,6 +35,12 @@ public class ReviewController {
     @GetMapping("/cards")
     public ApiResult<List<ReviewCardView>> cards() {
         return ApiResult.ok(reviewService.allCards(CurrentUser.requireId(), LocalDateTime.now()));
+    }
+
+    /** 复习统计与最近 7 天复习量，全部按 CurrentUser 过滤。 */
+    @GetMapping("/stats")
+    public ApiResult<ReviewStatsView> stats() {
+        return ApiResult.ok(reviewService.stats(CurrentUser.requireId(), LocalDateTime.now()));
     }
 
     @PostMapping("/{cardId}/start")

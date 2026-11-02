@@ -58,6 +58,13 @@ export interface QuestionView {
   expiresAt: string
 }
 
+/** 判题请求体。ink 是手写笔迹（设计文档 7.4），只留档不参与判分，因此不限定形状。 */
+export interface GradeRequest {
+  answer: string
+  durationMs: number
+  ink?: unknown
+}
+
 export interface GradeView {
   correct: boolean
   correctAnswer: string
@@ -101,6 +108,34 @@ export interface ReviewCard {
   dueAt: string
   lastReviewAt?: string | null
   due: boolean
+}
+
+/** 按模块的复习分布：卡片数，以及这些卡片累计的复习次数与遗忘次数。 */
+export interface ModuleStat {
+  moduleKey: string
+  cards: number
+  reviews: number
+  lapses: number
+}
+
+/** 单日复习量：correct 是当天 rating > 1 的条数（rating=1 是 Again 即答错）。 */
+export interface DayStat {
+  date: string
+  reviews: number
+  correct: number
+}
+
+/** 复习统计：全部按当前登录用户过滤，last7Days 固定 7 条（无数据的日期补 0）。 */
+export interface ReviewStats {
+  totalCards: number
+  dueCards: number
+  newCards: number
+  reviewCards: number
+  totalReviews: number
+  totalLapses: number
+  avgStability: number
+  byModule: ModuleStat[]
+  last7Days: DayStat[]
 }
 
 /** 开始复习：后端用卡片存的难度配置重新生成一道新题，题型与练习页一致。 */

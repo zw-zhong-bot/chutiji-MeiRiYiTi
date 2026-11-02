@@ -1,6 +1,7 @@
 import { request } from './client'
 import type {
   Difficulty,
+  GradeRequest,
   GradeView,
   LoginResponse,
   ModuleMeta,
@@ -8,6 +9,7 @@ import type {
   RecordPage,
   ReviewCard,
   ReviewStartView,
+  ReviewStats,
   UserView,
 } from './types'
 
@@ -29,10 +31,11 @@ export const questionApi = {
   create: (moduleKey: string, difficulty: Difficulty) =>
     request<QuestionView>('/questions', { method: 'POST', body: { moduleKey, difficulty } }),
 
-  grade: (questionId: string, answer: string, durationMs: number) =>
+  /** ink 只有 FIGURE 题会带；undefined 时 JSON.stringify 直接丢掉这个键，请求形状与旧版一致。 */
+  grade: (questionId: string, answer: string, durationMs: number, ink?: unknown) =>
     request<GradeView>('/questions/' + encodeURIComponent(questionId) + '/grade', {
       method: 'POST',
-      body: { answer, durationMs },
+      body: { answer, durationMs, ink } as GradeRequest,
     }),
 }
 
@@ -42,6 +45,9 @@ export const reviewApi = {
 
   /** 全部卡片，含未到期，按到期时间升序。 */
   cards: () => request<ReviewCard[]>('/review/cards'),
+
+  /** 复习统计：卡片类指标 + 最近 7 天复习量 + 按模块分布，只含当前用户的数据。 */
+  stats: () => request<ReviewStats>('/review/stats'),
 
   /** 用卡片存的难度配置重新出一道新题；卡不存在或不属于当前用户时后端报 2010。 */
   start: (cardId: number) =>

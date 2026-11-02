@@ -589,6 +589,17 @@ difficulty = { axis.key: 控件当前值 }
 
 ### 7.4 手写笔迹层 InkCanvas
 
+**契约（2026-11-02 补充）**：`QuestionRenderer` 对外暴露**两个**方法：
+
+- `collectAnswer()` —— 所有题型都必须实现，返回该题型的答案
+- `collectInk()` —— 可选，仅 FIGURE 返回笔迹点数组，其它题型返回 null
+
+**为什么放在 QuestionRenderer 而不是让调用方去挖子组件**：
+
+父视图（PracticeView / ReviewView）只应该认识 `QuestionRenderer` 这一个门面。如果让父视图通过 `$.refs` 之类的 Vue 内部结构去够子渲染器，等于把组件的内部实现变成公开契约 —— 一旦渲染器结构调整（比如加一层包装），代码会静默失效，且不会报错，只会丢失笔迹。
+
+统一从门面取，新增题型时只需在该渲染器实现 `collectInk()`（或返回 null），父视图零改动。
+
 - 基于 Canvas 2D + PointerEvent（同时支持鼠标、触控笔、手指）
 - 笔迹以点数组存为 JSON：[{x,y,p,t}]，随作答一起提交
 - 不做识别：提交后与标准答案并排显示，用户自评对照

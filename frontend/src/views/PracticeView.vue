@@ -69,7 +69,13 @@ async function submitAnswer(): Promise<void> {
   grading.value = true
   error.value = ''
   try {
-    result.value = await questionApi.grade(question.value.questionId, String(answer), Date.now() - startedAt)
+    result.value = await questionApi.grade(
+      question.value.questionId,
+      String(answer),
+      Date.now() - startedAt,
+      // 只有画过才带 ink；null 转 undefined 后 JSON.stringify 会丢掉这个键。
+      renderer.value?.collectInk() ?? undefined,
+    )
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : '判题失败'
   } finally {

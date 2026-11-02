@@ -14,6 +14,7 @@ import com.chutiji.review.ReviewService;
 import com.chutiji.question.QuestionDtos.GradeAnswerRequest;
 import com.chutiji.question.QuestionDtos.GradeView;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** 判题只在服务端进行：按 questionId 取出答案比对。 */
@@ -48,7 +49,7 @@ public class GradeService {
         record.setUserId(userId);
         record.setQuestionId(entity.getId());
         record.setModuleKey(entity.getModuleKey());
-        record.setSubmitted(toJson(request.answer()));
+        record.setSubmitted(toJson(request.answer(), request.ink()));
         record.setCorrect(result.correct());
         record.setDurationMs(request.durationMs());
         answerRecordRepository.save(record);
@@ -60,10 +61,17 @@ public class GradeService {
         return new GradeView(result.correct(), result.correctAnswer(), result.explanation());
     }
 
-    private String toJson(String answer) {
+    /**
+     * 落库形态：{"answer": "...", "ink": [...]}。ink 原样透传，只存不识别（设计文档 7.4）；
+     * 没有笔迹时不写这个键，保持既有记录形状不变。
+     */
+    private String toJson(String answer, JsonNode ink) {
         try {
             Map<String, Object> wrapper = new LinkedHashMap<>();
             wrapper.put("answer", answer);
+            if (ink != null && !ink.isNull()) {
+                wrapper.put("ink", ink);
+            }
             return objectMapper.writeValueAsString(wrapper);
         } catch (JsonProcessingException ex) {
             return "{\"answer\":\"\"}";
