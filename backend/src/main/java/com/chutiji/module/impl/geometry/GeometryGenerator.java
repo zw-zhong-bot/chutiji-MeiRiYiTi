@@ -432,11 +432,13 @@ final class GeometryGenerator {
         double natural = c + gap + k * c;
         double scale = 300.0 / natural;
         double bigOriginX = (c + gap) * scale;
+        // 大三角形的边长已经乘过 k，缩放系数不能再乘 k，否则等于把 k 平方，
+        // 极端组合（如 a=b=8,c=3,k=4）会把图形拉高到 2000 以上、撑爆 viewBox。
         double[] small = placeTriangle(a, b, c, scale, 0, 0);
-        double[] big = placeTriangle(a * k, b * k, c * k, scale * k, bigOriginX, 0);
+        double[] big = placeTriangle(a * k, b * k, c * k, scale, bigOriginX, 0);
 
         drawTriangle(canvas, a, b, c, scale, 0, 0, smallLabels[0], smallLabels[1], smallLabels[2]);
-        drawTriangle(canvas, a * k, b * k, c * k, scale * k, bigOriginX, 0,
+        drawTriangle(canvas, a * k, b * k, c * k, scale, bigOriginX, 0,
                 bigLabels[0], bigLabels[1], bigLabels[2]);
 
         if (auxiliary) {

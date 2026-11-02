@@ -285,7 +285,7 @@ class GeometryModuleTest {
     }
 
     @Test
-    @DisplayName("图形不溢出：viewBox 覆盖所有坐标，宽度高度为正")
+    @DisplayName("图形不溢出：viewBox 覆盖所有图形元素坐标，宽度高度为正")
     void svgNeverOverflows() {
         for (int i = 0; i < 60; i++) {
             String svg = (String) generate(i % 2 == 0, i % 3 == 0).payload().get("svg");
@@ -300,19 +300,29 @@ class GeometryModuleTest {
             assertTrue(w > 0 && h > 0, "viewBox 尺寸必须为正: " + viewBox);
             assertTrue(w < 2000 && h < 2000, "viewBox 尺寸异常大: " + viewBox);
 
+            // 只校验图形元素（circle / line / polygon / path / rect）的坐标，
+            // 跳过 <text>：文字是给图做标注的，位置与字号、锚点相关，不属于"图形溢出"的语义。
+            // 早期版本用 (?:x1|cx|x) 全量匹配，会把 <text x=...> 也算进去，遂偶发误报。
+            String graphicsOnly = stripTextElements(svg);
+
             java.util.regex.Matcher mx = java.util.regex.Pattern
-                    .compile("(?:x1|cx|x)='(-?\\d+(?:\\.\\d+)?)'").matcher(svg);
+                    .compile("(?:x1|cx|x)='(-?\\d+(?:\\.\\d+)?)'").matcher(graphicsOnly);
             while (mx.find()) {
                 double px = Double.parseDouble(mx.group(1));
                 assertTrue(px >= x - 0.5 && px <= x + w + 0.5, "横坐标 " + px + " 溢出 viewBox " + viewBox);
             }
             java.util.regex.Matcher my = java.util.regex.Pattern
-                    .compile("(?:y1|cy|y)='(-?\\d+(?:\\.\\d+)?)'").matcher(svg);
+                    .compile("(?:y1|cy|y)='(-?\\d+(?:\\.\\d+)?)'").matcher(graphicsOnly);
             while (my.find()) {
                 double py = Double.parseDouble(my.group(1));
                 assertTrue(py >= y - 0.5 && py <= y + h + 0.5, "纵坐标 " + py + " 溢出 viewBox " + viewBox);
             }
         }
+    }
+
+    /** 去掉所有 &lt;text&gt;...&lt;/text&gt; 片段，只留图形元素便于坐标校验。 */
+    private static String stripTextElements(String svg) {
+        return svg.replaceAll("(?s)<text\\b[^>]*>.*?</text>", "");
     }
 
     @Test

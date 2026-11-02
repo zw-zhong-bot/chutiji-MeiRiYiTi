@@ -138,6 +138,18 @@ export interface ReviewStats {
   last7Days: DayStat[]
 }
 
+/**
+ * 每日一题：同一天同一用户固定一道题，返回结构与 QuestionView 完全一致。
+ * 后端保证不下发 answer。
+ */
+export type DailyQuestionView = QuestionView
+
+/** 题库跑批结果：generated 是真正入库的条数，skipped 是生成失败被跳过的条数。 */
+export interface PoolGenerateView {
+  generated: number
+  skipped: number
+}
+
 /** 开始复习：后端用卡片存的难度配置重新生成一道新题，题型与练习页一致。 */
 export interface ReviewStartView {
   cardId: number

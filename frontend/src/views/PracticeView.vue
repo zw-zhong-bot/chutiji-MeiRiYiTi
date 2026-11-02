@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ApiError, moduleApi, questionApi } from '../api'
-import type { Difficulty, GradeView, ModuleMeta, QuestionView } from '../api'
+import { ApiError, dailyApi, moduleApi, questionApi } from '../api'
+import type { DailyQuestionView, Difficulty, GradeView, ModuleMeta, QuestionView } from '../api'
 import DifficultyPanel from '../components/difficulty/DifficultyPanel.vue'
 import ModulePicker from '../components/ModulePicker.vue'
 import QuestionRenderer from '../components/QuestionRenderer.vue'
@@ -19,6 +19,11 @@ const grading = ref(false)
 
 const renderer = ref<InstanceType<typeof QuestionRenderer> | null>(null)
 let startedAt = 0
+
+// 今日一题：进页面就取一次。后端按 user_id + 日期定死，所以当天怎么刷新都是同一道。
+const daily = ref<DailyQuestionView | null>(null)
+const dailyLoading = ref(false)
+const dailyError = ref('')
 
 async function loadModules(): Promise<void> {
   loadingModules.value = true
@@ -59,6 +64,28 @@ async function createQuestion(): Promise<void> {
   }
 }
 
+/** 把今日一题载入答题区；判题、提交走的仍是下面那套，不另外开一条链路。 */
+function openDaily(): void {
+  if (!daily.value) return
+  question.value = daily.value
+  result.value = null
+  error.value = ''
+  dailyError.value = ''
+  startedAt = Date.now()
+}
+
+async function loadDaily(): Promise<void> {
+  dailyLoading.value = true
+  dailyError.value = ''
+  try {
+    daily.value = await dailyApi.today()
+  } catch (e) {
+    dailyError.value = e instanceof ApiError ? e.message : '加载今日一题失败'
+  } finally {
+    dailyLoading.value = false
+  }
+}
+
 async function submitAnswer(): Promise<void> {
   if (!question.value) return
   const answer = renderer.value?.collectAnswer()
@@ -84,11 +111,30 @@ async function submitAnswer(): Promise<void> {
 }
 
 void loadModules()
+void loadDaily()
 </script>
 
 <template>
   <section class="practice">
     <p v-if="error" class="error-text banner">{{ error }}</p>
+
+    <div class="card block daily">
+      <div class="daily-head">
+        <div>
+          <h2 class="daily-title">今日一题</h2>
+          <p class="muted small">
+            每天一道，当天怎么刷新都是这同一道；点进去直接作答。
+          </p>
+        </div>
+        <button type="button" class="daily-btn" :disabled="dailyLoading || !daily" @click="openDaily">
+          {{ dailyLoading ? '加载中…' : '开始今日一题' }}
+        </button>
+      </div>
+      <p v-if="dailyError" class="error-text">{{ dailyError }}</p>
+      <p v-else-if="daily" class="muted small daily-meta">
+        模块 {{ daily.moduleKey }} · 题型 {{ daily.type }} · 限时 {{ daily.timeLimitSec }} 秒
+      </p>
+    </div>
 
     <div class="card block">
       <ModulePicker
@@ -147,5 +193,30 @@ void loadModules()
 .small {
   font-size: 13px;
   margin: 0;
+}
+
+.daily {
+  border-left: 4px solid #2563eb;
+}
+
+.daily-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.daily-title {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+
+.daily-btn {
+  white-space: nowrap;
+}
+
+.daily-meta {
+  margin-top: 10px;
 }
 </style>

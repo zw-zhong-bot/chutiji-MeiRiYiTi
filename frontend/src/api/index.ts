@@ -1,10 +1,12 @@
 import { request } from './client'
 import type {
+  DailyQuestionView,
   Difficulty,
   GradeRequest,
   GradeView,
   LoginResponse,
   ModuleMeta,
+  PoolGenerateView,
   QuestionView,
   RecordPage,
   ReviewCard,
@@ -54,6 +56,17 @@ export const reviewApi = {
     request<ReviewStartView>('/review/' + encodeURIComponent(String(cardId)) + '/start', {
       method: 'POST',
     }),
+}
+
+/** 每日一题：同一天多次调用返回同一道（后端按 user_id + 日期定死）。 */
+export const dailyApi = {
+  today: () => request<DailyQuestionView>('/daily'),
+}
+
+/** 题库跑批：登录即可，用于手动补池。 */
+export const poolApi = {
+  generate: (moduleKey: string, difficulty: Difficulty, count?: number) =>
+    request<PoolGenerateView>('/pool/generate', { method: 'POST', body: { moduleKey, difficulty, count } }),
 }
 
 export const recordApi = {

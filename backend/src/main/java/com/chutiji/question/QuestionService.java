@@ -3,6 +3,7 @@ package com.chutiji.question;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import com.chutiji.module.api.GeneratedQuestion;
 import com.chutiji.module.api.ModuleMeta;
 import com.chutiji.module.api.QuestionModule;
 import com.chutiji.module.registry.ModuleRegistry;
+import com.chutiji.pool.PoolService;
 import com.chutiji.question.QuestionDtos.CreateQuestionRequest;
 import com.chutiji.question.QuestionDtos.QuestionView;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,11 +31,14 @@ public class QuestionService {
     private final ModuleRegistry registry;
     private final QuestionRepository questionRepository;
     private final ObjectMapper objectMapper;
+    private final PoolService poolService;
 
-    public QuestionService(ModuleRegistry registry, QuestionRepository questionRepository, ObjectMapper objectMapper) {
+    public QuestionService(ModuleRegistry registry, QuestionRepository questionRepository, ObjectMapper objectMapper,
+                           PoolService poolService) {
         this.registry = registry;
         this.questionRepository = questionRepository;
         this.objectMapper = objectMapper;
+        this.poolService = poolService;
     }
 
     @Transactional
@@ -41,6 +46,13 @@ public class QuestionService {
         QuestionModule module = registry.require(request.moduleKey());
         ModuleMeta meta = module.meta();
         Map<String, Object> difficulty = request.difficulty() == null ? Map.of() : request.difficulty();
+
+        // 优先取池题（设计文档 3.3）：池里没有可用题才回退实时生成。
+        // 池题是公共资产，取用后仍留在表里服务其他用户。
+        Optional<QuestionEntity> pooled = poolService.take(userId, meta.key(), difficulty);
+        if (pooled.isPresent()) {
+            return toView(pooled.get(), meta);
+        }
 
         GeneratedQuestion generated = module.generate(new GenRequest(meta.key(), difficulty));
 
@@ -63,6 +75,12 @@ public class QuestionService {
         Map<String, Object> payload = new LinkedHashMap<>(generated.payload());
         return new QuestionView(id, meta.key(), meta.type().name(), generated.prompt(),
                 payload, meta.timeLimitSec(), entity.getExpiresAt());
+    }
+
+    /** 池题的落库行转下发结构：payload 读库，answer 留在服务端。 */
+    private QuestionView toView(QuestionEntity entity, ModuleMeta meta) {
+        return new QuestionView(entity.getId(), meta.key(), meta.type().name(), entity.getPrompt(),
+                readJson(entity.getPayload()), meta.timeLimitSec(), entity.getExpiresAt());
     }
 
     @Transactional(readOnly = true)
