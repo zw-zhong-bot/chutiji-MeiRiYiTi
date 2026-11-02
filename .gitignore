@@ -1,0 +1,50 @@
+# ===== Java / Maven =====
+target/
+.m2repo/
+build/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+*.war
+hs_err_pid*
+replay_pid*
+
+# ===== Node / 前端 =====
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+*.tsbuildinfo
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+
+# ===== IDE =====
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+
+# ===== 操作系统 =====
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ===== 日志 =====
+logs/
+*.log
+
+# ===== 本地密钥 / 个人配置（不进仓库） =====
+application-local.yml
+application-local.properties
+.env
+.env.local
+
+# ===== DSH 工具状态（不是项目源码） =====
+.dsh-knowledge/
+.dsh-ops/
+.tmp/
